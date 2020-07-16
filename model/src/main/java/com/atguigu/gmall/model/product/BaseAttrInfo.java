@@ -17,7 +17,7 @@ import java.util.List;
 @Data
 @ApiModel(description = "平台属性")
 @TableName("base_attr_info")
-public class BaseAttrInfo extends BaseEntity {
+public class  BaseAttrInfo extends BaseEntity {
 	
 	private static final long serialVersionUID = 1L;
 	
