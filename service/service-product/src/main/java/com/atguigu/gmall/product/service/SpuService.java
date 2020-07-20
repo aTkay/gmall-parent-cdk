@@ -1,8 +1,6 @@
 package com.atguigu.gmall.product.service;
 
-import com.atguigu.gmall.model.product.BaseSaleAttr;
-import com.atguigu.gmall.model.product.BaseTrademark;
-import com.atguigu.gmall.model.product.SpuInfo;
+import com.atguigu.gmall.model.product.*;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
@@ -14,4 +12,10 @@ public interface SpuService {
     List<BaseSaleAttr> baseSaleAttrList();
 
     List<BaseTrademark> getTrademarkList();
+
+    void saveSpuInfo(SpuInfo spuInfo);
+
+    List<SpuSaleAttr> spuSaleAttrList(Long spuId);
+
+    List<SpuImage> spuImageList(Long spuId);
 }

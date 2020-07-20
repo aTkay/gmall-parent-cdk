@@ -28,6 +28,12 @@ public class AttrInfoServiceImpl implements AttrInfoService {
         baseAttrInfoQueryWrapper.eq("category_level",3);
         baseAttrInfoQueryWrapper.eq("category_id",category3Id);
         List<BaseAttrInfo> baseAttrInfos = baseAttrInfoMapper.selectList(baseAttrInfoQueryWrapper);
+        for (BaseAttrInfo baseAttrInfo : baseAttrInfos) {
+            QueryWrapper<BaseAttrValue> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("attr_id", baseAttrInfo.getId());
+            List<BaseAttrValue> baseAttrValues = baseAttrValueMapper.selectList(queryWrapper);
+            baseAttrInfo.setAttrValueList(baseAttrValues);
+        }
         return baseAttrInfos;
     }
 
