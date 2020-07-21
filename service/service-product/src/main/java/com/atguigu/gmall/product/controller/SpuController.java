@@ -19,7 +19,6 @@ public class SpuController {
     SpuService spuService;
 
 
-    //销售属性值
     @RequestMapping("spuSaleAttrList/{spuId}")
     public Result spuSaleAttrList(@PathVariable Long spuId){
 
@@ -37,6 +36,7 @@ public class SpuController {
     }
 
 
+
     @RequestMapping("saveSpuInfo")
     public Result saveSpuInfo(@RequestBody SpuInfo spuInfo){
 
@@ -44,6 +44,7 @@ public class SpuController {
 
         return Result.ok();
     }
+
 
     @RequestMapping("baseTrademark/getTrademarkList")
     public Result getTrademarkList(){

@@ -15,7 +15,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SkuServiceImpl implements SkuService {
@@ -98,6 +100,27 @@ public class SkuServiceImpl implements SkuService {
 
         return skuInfo;
     }
+
+    @Override
+    public BigDecimal getSkuPrice(Long skuId) {
+
+        QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
+        
+        queryWrapper.eq("id", skuId);
+
+        SkuInfo skuInfo = skuInfoMapper.selectOne(queryWrapper);
+
+        return skuInfo.getPrice();
+    }
+
+    @Override
+    public List<Map<String, Object>> getSkuValueIdsMap(Long spuId) {
+
+        List<Map<String, Object>> map = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
+
+        return map;
+    }
+
 
     @Override
     public void cancelSale(Long skuId) {

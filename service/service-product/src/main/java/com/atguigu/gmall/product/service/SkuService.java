@@ -4,15 +4,23 @@ import com.atguigu.gmall.model.product.SkuInfo;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
-public interface SkuService {
-    void saveSkuInfo(SkuInfo skuInfo);
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
+public interface SkuService {
+
+    void saveSkuInfo(SkuInfo skuInfo);
 
     IPage<SkuInfo> list(Page pageParam);
 
-    void cancelSale(Long skuId);
-
     void onSale(Long skuId);
 
+    void cancelSale(Long skuId);
+
     SkuInfo getSkuInfo(Long skuId);
+
+    BigDecimal getSkuPrice(Long skuId);
+
+    List<Map<String, Object>> getSkuValueIdsMap(Long spuId);
 }

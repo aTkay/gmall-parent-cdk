@@ -121,4 +121,13 @@ public class SpuServiceImpl implements SpuService {
         List<SpuImage> spuImages = spuImageMapper.selectList(queryWrapper);
         return spuImages;
     }
+
+    @Override
+    public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId,Long spuId) {
+
+        List<SpuSaleAttr> spuSaleAttrs = spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuId,spuId);
+
+        return spuSaleAttrs;
+    }
+
 }
