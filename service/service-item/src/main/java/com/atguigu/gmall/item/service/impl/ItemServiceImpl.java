@@ -7,6 +7,7 @@ import com.atguigu.gmall.model.product.SkuInfo;
 import com.atguigu.gmall.model.product.SpuSaleAttr;
 import com.atguigu.gmall.product.client.ProductFeignClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,6 +20,9 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     ProductFeignClient productFeignClient;
+
+    @Autowired
+    RedisTemplate redisTemplate;
 
     /***
      * 1 商品基本信息
@@ -40,6 +44,7 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public Map<String, Object> getItem(Long skuId) {
+
         Map<String, Object> map = new HashMap<>();
 
         // 商品信息/图片信息
@@ -63,7 +68,6 @@ public class ItemServiceImpl implements ItemService {
         for (Map<String, Object> stringObjectMap : valueSkuIdMapList) {
             String v_sku_id = stringObjectMap.get("sku_id")+"";
             String k_value_ids = stringObjectMap.get("value_ids")+"";
-
             valueSkuIdMap.put(k_value_ids,v_sku_id);
         }
 

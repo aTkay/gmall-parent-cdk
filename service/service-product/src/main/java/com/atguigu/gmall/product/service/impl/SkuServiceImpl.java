@@ -29,14 +29,14 @@ public class SkuServiceImpl implements SkuService {
     SkuImageMapper skuImageMapper;
 
     @Autowired
-    SkuAttrValueMapper skuAttrValueMapper;
-
-    @Autowired
     SkuSaleAttrValueMapper skuSaleAttrValueMapper;
 
+    @Autowired
+    SkuAttrValueMapper skuAttrValueMapper;
 
     @Override
     public void saveSkuInfo(SkuInfo skuInfo) {
+
         // 保存sku基本信息
         skuInfoMapper.insert(skuInfo);
         Long skuId = skuInfo.getId();
@@ -62,27 +62,38 @@ public class SkuServiceImpl implements SkuService {
             skuSaleAttrValue.setSpuId(skuInfo.getSpuId());
             skuSaleAttrValueMapper.insert(skuSaleAttrValue);
         }
-
     }
 
     @Override
     public IPage<SkuInfo> list(Page pageParam) {
+
         IPage iPage = skuInfoMapper.selectPage(pageParam, null);
 
         return iPage;
     }
 
-
-
     @Override
     public void onSale(Long skuId) {
+
         SkuInfo skuInfo = new SkuInfo();
         skuInfo.setId(skuId);
         skuInfo.setIsSale(1);
         skuInfoMapper.updateById(skuInfo);
-        //将来要调用es插入已经上架的商品
+
+        // 将来要调用es插入已经上架的商品
     }
 
+    @Override
+    public void cancelSale(Long skuId) {
+
+        SkuInfo skuInfo = new SkuInfo();
+        skuInfo.setId(skuId);
+        skuInfo.setIsSale(0);
+        skuInfoMapper.updateById(skuInfo);
+
+        // 将来要调用es删除已经下架的商品
+
+    }
 
     @Override
     public SkuInfo getSkuInfo(Long skuId) {
@@ -105,14 +116,11 @@ public class SkuServiceImpl implements SkuService {
     public BigDecimal getSkuPrice(Long skuId) {
 
         QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
-        
-        queryWrapper.eq("id", skuId);
-
-        SkuInfo skuInfo = skuInfoMapper.selectOne(queryWrapper);
+        queryWrapper.eq("id",skuId);
+        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
 
         return skuInfo.getPrice();
     }
-
     @Override
     public List<Map<String, Object>> getSkuValueIdsMap(Long spuId) {
 
@@ -122,12 +130,4 @@ public class SkuServiceImpl implements SkuService {
     }
 
 
-    @Override
-    public void cancelSale(Long skuId) {
-        SkuInfo skuInfo = new SkuInfo();
-        skuInfo.setId(skuId);
-        skuInfo.setIsSale(0);
-        skuInfoMapper.updateById(skuInfo);
-        //将来要调用下架商品
-    }
 }

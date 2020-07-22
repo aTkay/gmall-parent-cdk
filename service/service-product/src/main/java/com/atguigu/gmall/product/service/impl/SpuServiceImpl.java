@@ -37,9 +37,9 @@ public class SpuServiceImpl implements SpuService {
 
         QueryWrapper<SpuInfo> queryWrapper = new QueryWrapper<>();
 
-        queryWrapper.eq("category3_id", spuInfo.getCategory3Id());
+        queryWrapper.eq("category3_id",spuInfo.getCategory3Id());
 
-        IPage<SpuInfo> infoIPage = spuInfoMapper.selectPage(pageParam, queryWrapper);
+        IPage<SpuInfo> infoIPage = spuInfoMapper.selectPage(pageParam,queryWrapper);
 
         return infoIPage;
     }
@@ -54,10 +54,9 @@ public class SpuServiceImpl implements SpuService {
         return baseTrademarkMapper.selectList(null);
     }
 
-    //保存功能
-
     @Override
     public void saveSpuInfo(SpuInfo spuInfo) {
+
         // 保存spu，生成主键id
         spuInfoMapper.insert(spuInfo);
         Long spuId = spuInfo.getId();
@@ -82,10 +81,7 @@ public class SpuServiceImpl implements SpuService {
             spuImage.setSpuId(spuId);
             spuImageMapper.insert(spuImage);
         }
-
-        }
-
-
+    }
 
     @Override
     public List<SpuSaleAttr> spuSaleAttrList(Long spuId) {
@@ -116,18 +112,20 @@ public class SpuServiceImpl implements SpuService {
 
         QueryWrapper<SpuImage> queryWrapper = new QueryWrapper<>();
 
-        queryWrapper.eq("spu_id",spuId);
+        queryWrapper.eq("spu_id", spuId);
 
         List<SpuImage> spuImages = spuImageMapper.selectList(queryWrapper);
         return spuImages;
+
+    }
+        @Override
+        public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId,Long spuId) {
+
+            List<SpuSaleAttr> spuSaleAttrs = spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuId,spuId);
+
+            return spuSaleAttrs;
+
     }
 
-    @Override
-    public List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(Long skuId,Long spuId) {
-
-        List<SpuSaleAttr> spuSaleAttrs = spuSaleAttrMapper.selectSpuSaleAttrListCheckBySku(skuId,spuId);
-
-        return spuSaleAttrs;
-    }
 
 }

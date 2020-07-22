@@ -10,6 +10,5 @@ import java.util.Map;
 
 @Mapper
 public interface SkuSaleAttrValueMapper extends BaseMapper<SkuSaleAttrValue> {
-
     List<Map<String, Object>> selectSaleAttrValuesBySpu(@Param("spuId") Long spuId);
 }

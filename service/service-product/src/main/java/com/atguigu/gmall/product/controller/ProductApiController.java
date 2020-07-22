@@ -49,6 +49,7 @@ public class ProductApiController {
 
         return price;
     }
+
     @RequestMapping("inner/getSpuSaleAttrListCheckBySku/{skuId}/{spuId}")
     List<SpuSaleAttr> getSpuSaleAttrListCheckBySku(@PathVariable("skuId") Long skuId, @PathVariable("spuId") Long spuId){
 
