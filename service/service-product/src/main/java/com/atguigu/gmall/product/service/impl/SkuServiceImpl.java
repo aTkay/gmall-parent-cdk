@@ -1,6 +1,7 @@
 package com.atguigu.gmall.product.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.atguigu.gmall.common.cache.GmallCache;
 import com.atguigu.gmall.common.constant.RedisConst;
 import com.atguigu.gmall.model.product.SkuAttrValue;
 import com.atguigu.gmall.model.product.SkuImage;
@@ -110,11 +111,14 @@ public class SkuServiceImpl implements SkuService {
             }
 
 
-
-
-
     @Override
+    @GmallCache
     public SkuInfo getSkuInfoNx(Long skuId) {
+        SkuInfo skuInfo = getSkuInfoFromDb(skuId);
+        return skuInfo;
+    }
+
+    public SkuInfo getSkuInfoNxBak(Long skuId) {
         SkuInfo skuInfo = null;
         String skuKey = RedisConst.SKUKEY_PREFIX+skuId+RedisConst.SKUKEY_SUFFIX;
         // 查询缓存

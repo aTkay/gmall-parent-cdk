@@ -32,7 +32,7 @@ public class ProductApiController {
 
     @RequestMapping("inner/getSkuInfo/{skuId}")
     SkuInfo getSkuInfo(@PathVariable("skuId") Long skuId){
-        SkuInfo skuInfo = skuService.getSkuInfo(skuId);
+        SkuInfo skuInfo = skuService.getSkuInfoNx(skuId);
         return skuInfo;
     }
 
