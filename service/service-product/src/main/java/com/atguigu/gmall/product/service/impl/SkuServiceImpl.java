@@ -1,5 +1,7 @@
 package com.atguigu.gmall.product.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.atguigu.gmall.common.constant.RedisConst;
 import com.atguigu.gmall.model.product.SkuAttrValue;
 import com.atguigu.gmall.model.product.SkuImage;
 import com.atguigu.gmall.model.product.SkuInfo;
@@ -12,12 +14,19 @@ import com.atguigu.gmall.product.service.SkuService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class SkuServiceImpl implements SkuService {
@@ -33,6 +42,11 @@ public class SkuServiceImpl implements SkuService {
 
     @Autowired
     SkuAttrValueMapper skuAttrValueMapper;
+
+
+    @Autowired
+    RedisTemplate redisTemplate;
+
 
     @Override
     public void saveSkuInfo(SkuInfo skuInfo) {
@@ -64,70 +78,140 @@ public class SkuServiceImpl implements SkuService {
         }
     }
 
+            @Override
+            public IPage<SkuInfo> list(Page pageParam) {
+
+                IPage iPage = skuInfoMapper.selectPage(pageParam, null);
+
+                return iPage;
+            }
+
+            @Override
+            public void onSale(Long skuId) {
+
+                SkuInfo skuInfo = new SkuInfo();
+                skuInfo.setId(skuId);
+                skuInfo.setIsSale(1);
+                skuInfoMapper.updateById(skuInfo);
+
+                // 将来要调用es插入已经上架的商品
+            }
+
+            @Override
+            public void cancelSale(Long skuId) {
+
+                SkuInfo skuInfo = new SkuInfo();
+                skuInfo.setId(skuId);
+                skuInfo.setIsSale(0);
+                skuInfoMapper.updateById(skuInfo);
+
+                // 将来要调用es删除已经下架的商品
+
+            }
+
+
+
+
+
     @Override
-    public IPage<SkuInfo> list(Page pageParam) {
-
-        IPage iPage = skuInfoMapper.selectPage(pageParam, null);
-
-        return iPage;
+    public SkuInfo getSkuInfoNx(Long skuId) {
+        SkuInfo skuInfo = null;
+        String skuKey = RedisConst.SKUKEY_PREFIX+skuId+RedisConst.SKUKEY_SUFFIX;
+        // 查询缓存
+        String skuCache = (String)redisTemplate.opsForValue().get(skuKey);
+        if(StringUtils.isNotBlank(skuCache)){
+            skuInfo = JSON.parseObject(skuCache, SkuInfo.class);
+        }else{
+            // 查询db时必须获得分布式锁，以保证数据库操作的安全性
+            String uid = UUID.randomUUID().toString();
+            Boolean stockLock = redisTemplate.opsForValue().setIfAbsent("sku:"+skuId+":stock", uid, 1, TimeUnit.SECONDS);//3秒钟分布式锁过期时间
+            if(stockLock){
+                skuInfo = getSkuInfoFromDb(skuId);
+                // 数据库查询完成，放入redis缓存
+                if(null!=skuInfo){
+                    redisTemplate.opsForValue().set(skuKey,JSON.toJSONString(skuInfo));
+                }else{
+                    // 访问不存在的key，防止空对象到redis中，防止缓存穿透
+                    redisTemplate.opsForValue().set(skuKey,JSON.toJSONString(new SkuInfo()),10,TimeUnit.SECONDS);
+                }
+                String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+                // 设置lua脚本返回的数据类型
+                DefaultRedisScript<Long> redisScript = new DefaultRedisScript<>();
+                // 设置lua脚本返回类型为Long
+                // redisScript.setResultType(Long.class);
+                redisScript.setScriptText(script);
+                redisTemplate.execute(redisScript, Arrays.asList("sku:"+skuId+":stock"),uid);
+            }else{
+                // 自选
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return getSkuInfoNx(skuId);
+            }
+        }
+        return skuInfo;
     }
 
-    @Override
-    public void onSale(Long skuId) {
 
-        SkuInfo skuInfo = new SkuInfo();
-        skuInfo.setId(skuId);
-        skuInfo.setIsSale(1);
-        skuInfoMapper.updateById(skuInfo);
 
-        // 将来要调用es插入已经上架的商品
-    }
 
-    @Override
-    public void cancelSale(Long skuId) {
-
-        SkuInfo skuInfo = new SkuInfo();
-        skuInfo.setId(skuId);
-        skuInfo.setIsSale(0);
-        skuInfoMapper.updateById(skuInfo);
-
-        // 将来要调用es删除已经下架的商品
-
-    }
-
+    //原生代码保留
     @Override
     public SkuInfo getSkuInfo(Long skuId) {
 
-        QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id",skuId);
-        SkuInfo skuInfo = skuInfoMapper.selectOne(queryWrapper);
+        SkuInfo skuInfo = null;
 
+        String skuKey = RedisConst.SKUKEY_PREFIX+skuId+RedisConst.SKUKEY_SUFFIX;
 
-        QueryWrapper<SkuImage> skuImageQueryWrapper = new QueryWrapper<>();
-        skuImageQueryWrapper.eq("sku_id",skuId);
-        List<SkuImage> skuImages = skuImageMapper.selectList(skuImageQueryWrapper);
+        // 查询缓存
+        String skuCache = (String)redisTemplate.opsForValue().get(skuKey);
 
-        skuInfo.setSkuImageList(skuImages);
+        if(StringUtils.isNotBlank(skuCache)){
+            skuInfo = JSON.parseObject(skuCache, SkuInfo.class);
+        }else{
+            skuInfo = getSkuInfoFromDb(skuId);
+            // 数据库查询完成，放入redis缓存
+            if(null!=skuInfo){
+                redisTemplate.opsForValue().set(skuKey,JSON.toJSONString(skuInfo));
+            }
+        }
 
         return skuInfo;
     }
 
-    @Override
-    public BigDecimal getSkuPrice(Long skuId) {
-
+    private SkuInfo getSkuInfoFromDb(Long skuId) {
+        SkuInfo skuInfo = null;
+        // 如果缓存没有，查询数据库
         QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("id",skuId);
-        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
-
-        return skuInfo.getPrice();
-    }
-    @Override
-    public List<Map<String, Object>> getSkuValueIdsMap(Long spuId) {
-
-        List<Map<String, Object>> map = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
-
-        return map;
+        skuInfo = skuInfoMapper.selectOne(queryWrapper);
+        if(null!=skuInfo){
+            QueryWrapper<SkuImage> skuImageQueryWrapper = new QueryWrapper<>();
+            skuImageQueryWrapper.eq("sku_id",skuId);
+            List<SkuImage> skuImages = skuImageMapper.selectList(skuImageQueryWrapper);
+            skuInfo.setSkuImageList(skuImages);
+        }
+        return skuInfo;
     }
 
+        @Override
+        public BigDecimal getSkuPrice(Long skuId) {
 
-}
+            QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("id",skuId);
+            SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+
+            return skuInfo.getPrice();
+        }
+        @Override
+        public List<Map<String, Object>> getSkuValueIdsMap(Long spuId) {
+
+            List<Map<String, Object>> map = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
+
+            return map;
+        }
+
+
+    }
