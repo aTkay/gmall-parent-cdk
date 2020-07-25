@@ -77,12 +77,12 @@ public class TestController {
         String stock = redisTemplate.opsForValue().get("stock").toString();
         int i = Integer.parseInt(stock);
         if(i>0){
-            i -- ;
+            i-- ;
             redisTemplate.opsForValue().set("stock",i);
             System.out.println("目前库存剩余数量:"+i);
         }else{
             System.out.println("目前库存剩余数量:0");
         }
-        return "剩余库存数量:0";
+        return "剩余库存数量:"+i;
     }
 }

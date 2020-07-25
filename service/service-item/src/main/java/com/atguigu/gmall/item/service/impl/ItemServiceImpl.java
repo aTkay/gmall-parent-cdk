@@ -50,6 +50,10 @@ public class ItemServiceImpl implements ItemService {
         // 商品信息/图片信息
         SkuInfo skuInfo = productFeignClient.getSkuInfo(skuId);
 
+
+
+
+
         // 分类信息
         BaseCategoryView baseCategoryView = productFeignClient.getCategoryView(skuInfo.getCategory3Id());
 

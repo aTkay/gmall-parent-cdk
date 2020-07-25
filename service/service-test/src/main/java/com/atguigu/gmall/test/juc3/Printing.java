@@ -5,7 +5,7 @@ public class Printing {
     private long num = 0;
 
     public synchronized void print0(){
-        while(num!=1){
+        while (num!=1){
             try {
                 this.wait();
             } catch (InterruptedException e) {
