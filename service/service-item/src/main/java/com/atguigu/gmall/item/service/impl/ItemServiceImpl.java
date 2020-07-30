@@ -2,6 +2,7 @@ package com.atguigu.gmall.item.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.atguigu.gmall.item.service.ItemService;
+import com.atguigu.gmall.list.client.ListFeignClient;
 import com.atguigu.gmall.model.product.BaseCategoryView;
 import com.atguigu.gmall.model.product.SkuInfo;
 import com.atguigu.gmall.model.product.SpuSaleAttr;
@@ -14,6 +15,10 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Service
 public class ItemServiceImpl implements ItemService {
@@ -23,6 +28,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Autowired
     RedisTemplate redisTemplate;
+
+    @Autowired
+    ThreadPoolExecutor executor;
+
+    @Autowired
+    ListFeignClient listFeignClient;
+
 
     /***
      * 1 商品基本信息
@@ -42,17 +54,109 @@ public class ItemServiceImpl implements ItemService {
      * @param skuId
      * @return
      */
+
+    @Override
+    public Map<String, Object> getItemThread(Long skuId) {
+
+        long currentTimeMillisStart = System.currentTimeMillis();
+        System.out.println("多线程执行开始:"+currentTimeMillisStart);
+
+        Map<String, Object> map = new HashMap<>();
+
+
+        // 商品信息/图片信息
+        CompletableFuture completableFutureSkuInfo = CompletableFuture.supplyAsync(new Supplier<SkuInfo>() {
+            @Override
+            public SkuInfo get() {
+        SkuInfo skuInfo = productFeignClient.getSkuInfo(skuId);
+        map.put("skuInfo", skuInfo);
+                return skuInfo;
+            }
+        },executor);
+
+
+        
+        // 分类信息
+        CompletableFuture completableFutureCategory = completableFutureSkuInfo.thenAcceptAsync(new Consumer<SkuInfo>() {
+            @Override
+            public void accept(SkuInfo skuInfo) {
+
+        BaseCategoryView baseCategoryView = productFeignClient.getCategoryView(skuInfo.getCategory3Id());
+        map.put("categoryView", baseCategoryView);
+            }
+        },executor);
+
+
+        // 价格信息
+        CompletableFuture completableFuturePrice = CompletableFuture.runAsync(new Runnable() {
+            @Override
+            public void run() {
+        BigDecimal price = productFeignClient.getSkuPrice(skuId);
+                map.put("price", price);
+            }
+        },executor);
+
+
+        // 调用商品搜索服务，更新热度值
+        CompletableFuture completableFutureHotScore = CompletableFuture.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                listFeignClient.incrHotScore(skuId);
+            }
+        },executor);
+
+
+        // 商品销售属性列表
+        CompletableFuture completableFutureSaleAttr = completableFutureSkuInfo.thenAcceptAsync(new Consumer<SkuInfo>() {
+            @Override
+            public void accept(SkuInfo skuInfo) {
+            Long spuId = skuInfo.getSpuId();
+            List<SpuSaleAttr> spuSaleAttrs = productFeignClient.getSpuSaleAttrListCheckBySku(skuId, spuId);
+
+            }
+        });
+
+
+        // 商品的销售属性值对应skuId的map
+        CompletableFuture completableFutureSaleMap = completableFutureSkuInfo.thenAcceptAsync(new Consumer<SkuInfo>() {
+
+            @Override
+            public void accept(SkuInfo skuInfo) {
+
+        List<Map<String, Object>> valueSkuIdMapList = productFeignClient.getSkuValueIdsMap(skuInfo.getSpuId());
+
+        Map<String, String> valueSkuIdMap = new HashMap<>();
+
+        for (Map<String, Object> stringObjectMap : valueSkuIdMapList) {
+            String v_sku_id = stringObjectMap.get("sku_id") + "";
+            String k_value_ids = stringObjectMap.get("value_ids") + "";
+            valueSkuIdMap.put(k_value_ids, v_sku_id);
+        }
+            }
+        },executor);
+
+        //组合线程
+        CompletableFuture.allOf(completableFutureSkuInfo,completableFutureCategory,completableFutureSaleAttr,completableFutureSaleMap,completableFuturePrice);
+
+        //计算时间
+        long currentTimeMillisEnd = System.currentTimeMillis();
+        System.out.println("多线程执行结束:"+currentTimeMillisEnd);
+
+        System.out.println("多线程执行用时:"+(currentTimeMillisEnd-currentTimeMillisStart));
+
+        return map;
+    }
     @Override
     public Map<String, Object> getItem(Long skuId) {
+
+        long currentTimeMillisStart = System.currentTimeMillis();
+        System.out.println("非多线程执行开始:"+currentTimeMillisStart);
+
 
         Map<String, Object> map = new HashMap<>();
 
         // 商品信息/图片信息
         SkuInfo skuInfo = productFeignClient.getSkuInfo(skuId);
-
-
-
-
 
         // 分类信息
         BaseCategoryView baseCategoryView = productFeignClient.getCategoryView(skuInfo.getCategory3Id());
@@ -62,24 +166,32 @@ public class ItemServiceImpl implements ItemService {
 
         // 商品销售属性列表
         Long spuId = skuInfo.getSpuId();
-        List<SpuSaleAttr> spuSaleAttrs =  productFeignClient.getSpuSaleAttrListCheckBySku(skuId,spuId);
+        List<SpuSaleAttr> spuSaleAttrs = productFeignClient.getSpuSaleAttrListCheckBySku(skuId, spuId);
 
         // 商品的销售属性值对应skuId的map
         List<Map<String, Object>> valueSkuIdMapList = productFeignClient.getSkuValueIdsMap(spuId);
 
-        Map<String,String> valueSkuIdMap = new HashMap<>();
+        Map<String, String> valueSkuIdMap = new HashMap<>();
 
         for (Map<String, Object> stringObjectMap : valueSkuIdMapList) {
-            String v_sku_id = stringObjectMap.get("sku_id")+"";
-            String k_value_ids = stringObjectMap.get("value_ids")+"";
-            valueSkuIdMap.put(k_value_ids,v_sku_id);
+            String v_sku_id = stringObjectMap.get("sku_id") + "";
+            String k_value_ids = stringObjectMap.get("value_ids") + "";
+            valueSkuIdMap.put(k_value_ids, v_sku_id);
         }
 
         map.put("categoryView", baseCategoryView);
-        map.put("skuInfo",skuInfo);
-        map.put("price",price);
-        map.put("spuSaleAttrList",spuSaleAttrs);
+        map.put("skuInfo", skuInfo);
+        map.put("price", price);
+        map.put("spuSaleAttrList", spuSaleAttrs);
         map.put("valuesSkuJson", JSON.toJSONString(valueSkuIdMap));
+
+
+        long currentTimeMillisEnd = System.currentTimeMillis();
+        System.out.println("非多线程执行结束:"+currentTimeMillisEnd);
+
+        System.out.println("非多线程执行用时:"+(currentTimeMillisEnd-currentTimeMillisStart));
         return map;
+
     }
+
 }

@@ -1,12 +1,10 @@
 package com.atguigu.gmall.product.controller;
 
 
-import com.atguigu.gmall.model.product.BaseCategoryView;
-import com.atguigu.gmall.model.product.SkuInfo;
-import com.atguigu.gmall.model.product.SpuSaleAttr;
-import com.atguigu.gmall.product.service.CategoryService;
-import com.atguigu.gmall.product.service.SkuService;
-import com.atguigu.gmall.product.service.SpuService;
+import com.atguigu.gmall.common.result.Result;
+import com.atguigu.gmall.model.list.SearchAttr;
+import com.atguigu.gmall.model.product.*;
+import com.atguigu.gmall.product.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +27,12 @@ public class ProductApiController {
 
     @Autowired
     SpuService spuService;
+
+    @Autowired
+    AttrInfoService attrInfoService;
+
+    @Autowired
+    BaseTrademarkService baseTrademarkService;
 
     @RequestMapping("inner/getSkuInfo/{skuId}")
     SkuInfo getSkuInfo(@PathVariable("skuId") Long skuId){
@@ -64,6 +68,20 @@ public class ProductApiController {
         List<Map<String, Object>> map = skuService.getSkuValueIdsMap(spuId);
 
         return map;
+    }
+
+    @RequestMapping("inner/getAttrList/{skuId}")
+    List<SearchAttr> getAttrList(@PathVariable("skuId") Long skuId){
+        List<SearchAttr> baseAttrInfos = attrInfoService.getAttrList(skuId);
+
+        return baseAttrInfos;
+    }
+
+    @RequestMapping("inner/getTrademark/{tmId}")
+    BaseTrademark getTrademark(@PathVariable("tmId") Long tmId){
+        BaseTrademark baseTrademark = baseTrademarkService.getTrademark(tmId);
+
+        return baseTrademark;
     }
 
 }

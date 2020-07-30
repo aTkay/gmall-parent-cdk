@@ -10,6 +10,8 @@
       <module fileurl="file://$PROJECT_DIR$/service-client/service-client.iml" filepath="$PROJECT_DIR$/service-client/service-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/service/service-item/service-item.iml" filepath="$PROJECT_DIR$/service/service-item/service-item.iml" />
       <module fileurl="file://$PROJECT_DIR$/service-client/service-item-client/service-item-client.iml" filepath="$PROJECT_DIR$/service-client/service-item-client/service-item-client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/service/service-list/service-list.iml" filepath="$PROJECT_DIR$/service/service-list/service-list.iml" />
+      <module fileurl="file://$PROJECT_DIR$/service-client/service-list-client/service-list-client.iml" filepath="$PROJECT_DIR$/service-client/service-list-client/service-list-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/service/service-product/service-product.iml" filepath="$PROJECT_DIR$/service/service-product/service-product.iml" />
       <module fileurl="file://$PROJECT_DIR$/service-client/service-product-client/service-product-client.iml" filepath="$PROJECT_DIR$/service-client/service-product-client/service-product-client.iml" />
       <module fileurl="file://$PROJECT_DIR$/service/service-test/service-test.iml" filepath="$PROJECT_DIR$/service/service-test/service-test.iml" />

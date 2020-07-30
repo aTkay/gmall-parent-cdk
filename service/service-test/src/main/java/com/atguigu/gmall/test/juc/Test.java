@@ -9,5 +9,9 @@ public class Test {
             MyRunnableImpl myRunnable = new MyRunnableImpl(myTicket);
             new Thread(myRunnable).start();
         }
+
+        new Thread(()->{
+           myTicket.sale();
+        }).start();
     }
 }

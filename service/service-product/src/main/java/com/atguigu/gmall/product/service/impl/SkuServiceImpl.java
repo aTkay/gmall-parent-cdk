@@ -3,6 +3,7 @@ package com.atguigu.gmall.product.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.atguigu.gmall.common.cache.GmallCache;
 import com.atguigu.gmall.common.constant.RedisConst;
+import com.atguigu.gmall.list.client.ListFeignClient;
 import com.atguigu.gmall.model.product.SkuAttrValue;
 import com.atguigu.gmall.model.product.SkuImage;
 import com.atguigu.gmall.model.product.SkuInfo;
@@ -15,7 +16,6 @@ import com.atguigu.gmall.product.service.SkuService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -44,10 +44,11 @@ public class SkuServiceImpl implements SkuService {
     @Autowired
     SkuAttrValueMapper skuAttrValueMapper;
 
-
     @Autowired
     RedisTemplate redisTemplate;
 
+    @Autowired
+    ListFeignClient feignListClient;
 
     @Override
     public void saveSkuInfo(SkuInfo skuInfo) {
@@ -79,36 +80,39 @@ public class SkuServiceImpl implements SkuService {
         }
     }
 
-            @Override
-            public IPage<SkuInfo> list(Page pageParam) {
+    @Override
+    public IPage<SkuInfo> list(Page pageParam) {
 
-                IPage iPage = skuInfoMapper.selectPage(pageParam, null);
+        IPage iPage = skuInfoMapper.selectPage(pageParam, null);
 
-                return iPage;
-            }
+        return iPage;
+    }
 
-            @Override
-            public void onSale(Long skuId) {
+    @Override
+    public void onSale(Long skuId) {
 
-                SkuInfo skuInfo = new SkuInfo();
-                skuInfo.setId(skuId);
-                skuInfo.setIsSale(1);
-                skuInfoMapper.updateById(skuInfo);
+        SkuInfo skuInfo = new SkuInfo();
+        skuInfo.setId(skuId);
+        skuInfo.setIsSale(1);
+        skuInfoMapper.updateById(skuInfo);
 
-                // 将来要调用es插入已经上架的商品
-            }
+        // 将来要调用es插入已经上架的商品
+        feignListClient.upperGoods(skuId);
+    }
 
-            @Override
-            public void cancelSale(Long skuId) {
+    @Override
+    public void cancelSale(Long skuId) {
 
-                SkuInfo skuInfo = new SkuInfo();
-                skuInfo.setId(skuId);
-                skuInfo.setIsSale(0);
-                skuInfoMapper.updateById(skuInfo);
+        SkuInfo skuInfo = new SkuInfo();
+        skuInfo.setId(skuId);
+        skuInfo.setIsSale(0);
+        skuInfoMapper.updateById(skuInfo);
 
-                // 将来要调用es删除已经下架的商品
+        // 将来要调用es删除已经下架的商品
+        feignListClient.lowerGoods(skuId);
 
-            }
+    }
+
 
 
     @Override
@@ -117,6 +121,7 @@ public class SkuServiceImpl implements SkuService {
         SkuInfo skuInfo = getSkuInfoFromDb(skuId);
         return skuInfo;
     }
+
 
     public SkuInfo getSkuInfoNxBak(Long skuId) {
         SkuInfo skuInfo = null;
@@ -128,7 +133,7 @@ public class SkuServiceImpl implements SkuService {
         }else{
             // 查询db时必须获得分布式锁，以保证数据库操作的安全性
             String uid = UUID.randomUUID().toString();
-            Boolean stockLock = redisTemplate.opsForValue().setIfAbsent("sku:"+skuId+":stock", uid, 1, TimeUnit.SECONDS);//3秒钟分布式锁过期时间
+            Boolean stockLock = redisTemplate.opsForValue().setIfAbsent("sku:"+skuId+":lock", uid, 1, TimeUnit.SECONDS);//3秒钟分布式锁过期时间
             if(stockLock){
                 skuInfo = getSkuInfoFromDb(skuId);
                 // 数据库查询完成，放入redis缓存
@@ -144,7 +149,7 @@ public class SkuServiceImpl implements SkuService {
                 // 设置lua脚本返回类型为Long
                 // redisScript.setResultType(Long.class);
                 redisScript.setScriptText(script);
-                redisTemplate.execute(redisScript, Arrays.asList("sku:"+skuId+":stock"),uid);
+                redisTemplate.execute(redisScript, Arrays.asList("sku:"+skuId+":lock"),uid);
             }else{
                 // 自选
                 try {
@@ -159,9 +164,6 @@ public class SkuServiceImpl implements SkuService {
     }
 
 
-
-
-    //原生代码保留
     @Override
     public SkuInfo getSkuInfo(Long skuId) {
 
@@ -200,22 +202,21 @@ public class SkuServiceImpl implements SkuService {
         return skuInfo;
     }
 
-        @Override
-        public BigDecimal getSkuPrice(Long skuId) {
+    @Override
+    public BigDecimal getSkuPrice(Long skuId) {
 
-            QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("id",skuId);
-            SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
+        QueryWrapper<SkuInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("id",skuId);
+        SkuInfo skuInfo = skuInfoMapper.selectById(skuId);
 
-            return skuInfo.getPrice();
-        }
-        @Override
-        public List<Map<String, Object>> getSkuValueIdsMap(Long spuId) {
-
-            List<Map<String, Object>> map = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
-
-            return map;
-        }
-
-
+        return skuInfo.getPrice();
     }
+
+    @Override
+    public List<Map<String, Object>> getSkuValueIdsMap(Long spuId) {
+
+        List<Map<String, Object>> map = skuSaleAttrValueMapper.selectSaleAttrValuesBySpu(spuId);
+
+        return map;
+    }
+}

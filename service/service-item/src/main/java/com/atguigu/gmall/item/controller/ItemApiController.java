@@ -24,6 +24,7 @@ public class ItemApiController {
 
         // 调用product商品基础服务查询数据
         Map<String,Object> map = itemService.getItem(skuId);
+        Map<String,Object> itemThread = itemService.getItemThread(skuId);
         return Result.ok(map);
     }
 }
