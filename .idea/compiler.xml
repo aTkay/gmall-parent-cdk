@@ -9,15 +9,16 @@
         <outputRelativeToContentRoot value="true" />
         <module name="web-all" />
         <module name="common-util" />
-        <module name="service-item-client" />
         <module name="service-list-client" />
+        <module name="server-gateway" />
         <module name="model" />
+        <module name="service-test" />
         <module name="service-util" />
         <module name="web-util" />
         <module name="service-product" />
         <module name="service-item" />
         <module name="service-list" />
-        <module name="service-test" />
+        <module name="service-item-client" />
         <module name="service-product-client" />
       </profile>
     </annotationProcessing>
@@ -27,6 +28,7 @@
       <module name="demo" target="1.8" />
       <module name="gmall-parent-cdk" target="1.8" />
       <module name="model" target="1.8" />
+      <module name="server-gateway" target="1.8" />
       <module name="service" target="1.8" />
       <module name="service-client" target="1.8" />
       <module name="service-item" target="1.8" />
@@ -48,6 +50,7 @@
       <module name="common-util" options="-parameters" />
       <module name="demo" options="-parameters" />
       <module name="model" options="-parameters" />
+      <module name="server-gateway" options="-parameters" />
       <module name="service" options="-parameters" />
       <module name="service-item" options="-parameters" />
       <module name="service-item-client" options="-parameters" />

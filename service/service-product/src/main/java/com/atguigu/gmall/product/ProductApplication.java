@@ -10,6 +10,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @SpringBootApplication
 @MapperScan("com.atguigu.gmall.product.mapper")
 @ComponentScan("com.atguigu.gmall")
+@EnableSwagger2
 @EnableFeignClients("com.atguigu.gmall")
 public class ProductApplication {
 
