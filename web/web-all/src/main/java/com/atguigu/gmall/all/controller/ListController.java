@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 @Controller
@@ -27,10 +28,14 @@ public class ListController {
 
 
     @GetMapping({"/","index"})
-    public String index(SearchParam searchParam, Model model) {
+    public String index(HttpServletRequest request,SearchParam searchParam, Model model) {
+
+        String userId = request.getHeader("userId");
+
         Result result = productFeignClient.getBaseCategoryList();
 
         model.addAttribute("list",result.getData());
+
         return "index";
     }
 

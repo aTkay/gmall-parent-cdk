@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -84,10 +85,13 @@ public class ProductApiController {
 
         return baseTrademark;
     }
+
     @RequestMapping("inner/getBaseCategoryList")
-    Result getBaseCategoryList(){
+    Result getBaseCategoryList(HttpServletRequest request){
+        String userId = request.getHeader("userId");
 
         List<JSONObject> baseCategoryList  = categoryService.getBaseCategoryList();
         return Result.ok(baseCategoryList);
     }
+
 }

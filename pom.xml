@@ -11,6 +11,8 @@
         <module>service-client</module>
         <module>service</module>
         <module>server-gateway</module>
+        <module>service/service-user</module>
+        <module>service/service-cart</module>
     </modules>
 
     <parent>
