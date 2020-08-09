@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("api/cart")
@@ -24,23 +25,23 @@ public class CartApiController {
     CartInfoService cartInfoService;
 
     @RequestMapping("checkCart/{skuId}/{isChecked}")
-    public Result checkCart(HttpServletRequest request,@PathVariable("skuId") Long skuId,@PathVariable("isChecked") String isChecked, ModelMap modelMap){
+    public Result checkCart(HttpServletRequest request, @PathVariable("skuId") Long skuId, @PathVariable("isChecked") String isChecked, ModelMap modelMap) {
         String userId = AuthContextHolder.getUserId(request);
         String userTempId = AuthContextHolder.getUserTempId(request);
 
-        if(StringUtils.isEmpty(userId)){
+        if (StringUtils.isEmpty(userId)) {
             userId = userTempId;
         }
 
-        cartInfoService.checkCart(skuId,isChecked,userId);
+        cartInfoService.checkCart(skuId, isChecked, userId);
 
         return Result.ok();
     }
 
-    public BigDecimal getSumPrice(List<CartInfo> cartInfos){
+    public BigDecimal getSumPrice(List<CartInfo> cartInfos) {
         BigDecimal bigDecimal = new BigDecimal("0");
         for (CartInfo cartInfo : cartInfos) {
-            if(cartInfo.getIsChecked().equals("1")){
+            if (cartInfo.getIsChecked().equals("1")) {
                 BigDecimal multiply = cartInfo.getSkuPrice().multiply(new BigDecimal(cartInfo.getSkuNum()));
                 bigDecimal = bigDecimal.add(multiply);
             }
@@ -49,11 +50,12 @@ public class CartApiController {
     }
 
     @RequestMapping("cartList")
-    public Result cartList(HttpServletRequest request, ModelMap modelMap){
+    public Result cartList(HttpServletRequest request, ModelMap modelMap) {
+
         String userId = AuthContextHolder.getUserId(request);
         String userTempId = AuthContextHolder.getUserTempId(request);
 
-        if(StringUtils.isEmpty(userId)){
+        if (StringUtils.isEmpty(userId)) {
             userId = userTempId;
         }
 
@@ -62,24 +64,36 @@ public class CartApiController {
         return Result.ok(cartInfos);
     }
 
+
+    /**
+     * 用户已经登录才能访问结算获得购物车列表转化成订单详情信息
+     * @param userId
+     * @return
+     */
+    @RequestMapping("inner/getCartList/{userId}")
+    public List<CartInfo> getCartList(@PathVariable("userId") String userId) {
+        List<CartInfo> cartInfos = cartInfoService.getCartList(userId);
+        return cartInfos;
+    }
+
     @RequestMapping("inner/addToCart/{skuId}/{skuNum}")
-    void addToCart(HttpServletRequest request, @PathVariable("skuId") Long skuId, @PathVariable("skuNum")  Long skuNum){
+    void addToCart(HttpServletRequest request, @PathVariable("skuId") Long skuId, @PathVariable("skuNum") Long skuNum) {
 
         String userId = AuthContextHolder.getUserId(request);
         String userTempId = AuthContextHolder.getUserTempId(request);
 
-        if(StringUtils.isEmpty(userId)){
+        if (StringUtils.isEmpty(userId)) {
             userId = userTempId;
         }
 
-        cartInfoService.addToCart(skuId,skuNum,userId);
+        cartInfoService.addToCart(skuId, skuNum, userId);
     }
 
     @RequestMapping("inner/mergeToCartList/{userId}/{userTempId}")
-    void mergeToCartList(@PathVariable("userId") String userId, @PathVariable("userTempId") String userTempId){
+    void mergeToCartList(@PathVariable("userId") String userId, @PathVariable("userTempId") String userTempId) {
 
         // 合并正式用户购物车
-        cartInfoService.mergeToCartList(userId,userTempId);
+        cartInfoService.mergeToCartList(userId, userTempId);
 
         // 删除临时id购物车
         cartInfoService.deleteCartList(userTempId);
@@ -90,13 +104,13 @@ public class CartApiController {
     }
 
     @RequestMapping("inner/checkIfMergeToCartList/{userTempId}")
-    boolean checkIfMergeToCartList(@PathVariable("userTempId") String userTempId){
+    boolean checkIfMergeToCartList(@PathVariable("userTempId") String userTempId) {
 
         boolean b = false;
 
-        List<CartInfo> cartInfos =  cartInfoService.checkIfMergeToCartList(userTempId);
+        List<CartInfo> cartInfos = cartInfoService.checkIfMergeToCartList(userTempId);
 
-        if(null!=cartInfos&&cartInfos.size()>0){
+        if (null != cartInfos && cartInfos.size() > 0) {
             b = true;
         }
 

@@ -162,15 +162,15 @@ public class CartInfoServiceImpl implements CartInfoService {
             // 缓存没有查数据库
             cartInfos = loadCartCache(userId);
         }
-
+        
         if(null!=cartInfos&&cartInfos.size()>0){
             for (CartInfo cartInfo : cartInfos) {
                 SkuInfo skuInfo = procuFeignClient.getSkuInfo(cartInfo.getSkuId());
                 cartInfo.setSkuPrice(skuInfo.getPrice());
             }
         }
-
-
+        
+        
         return cartInfos;
     }
 
@@ -191,5 +191,17 @@ public class CartInfoServiceImpl implements CartInfoService {
         CartInfo cartInfoFromCache = (CartInfo)redisTemplate.boundHashOps(RedisConst.USER_KEY_PREFIX + userId + RedisConst.USER_CART_KEY_SUFFIX).get(skuId+"");
         cartInfoFromCache.setIsChecked(Integer.parseInt(isChecked));
         redisTemplate.boundHashOps(RedisConst.USER_KEY_PREFIX + userId + RedisConst.USER_CART_KEY_SUFFIX).put(skuId+"",cartInfo);
+    }
+
+    /**
+     * 生成tradeNo
+     * @param tradeNo
+     * @param userId
+     */
+    @Override
+    public void genTradeNo(String tradeNo, String userId) {
+
+        redisTemplate.opsForValue().set(RedisConst.USER_KEY_PREFIX+userId+":tradeNo",tradeNo);
+
     }
 }
